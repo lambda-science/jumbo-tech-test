@@ -9,6 +9,22 @@ The purpose of this exercise is to create an AI dedicated in hiding. From a 12x1
 - `source .venv/bin/activate`
 - `pip install stable-baselines3[extra] numpy gymnasium pygame`
 
+# Architecture
+
+To solve this I created a custom `Gymnasium` environnement that represent a 12x12 matrix.
+
+- The observations space is a flatten 12x12 matrix, so a 1D vector with 144 values.
+
+```python
+self.observation_space = spaces.flatten_space(spaces.Box(low=0, high=4, shape=(MATRIX_SIZE, MATRIX_SIZE), dtype=np.uint8))
+```
+
+- Elements are encoded as following in the vector: 0 empty space, 1 AI Agent, 2 Guard player, 3 pillars, 4 good hiding spot.
+- Four actions are possible: moving up, down, left, right.
+- Current reward function is 50 + termination of the game if the agent is in a good hidding spot and 0.05 reward for visiting a non-previously visited position.
+- I used the `DQN` (Deep Q-Learning) algorithm with `MlpPolicy` (flat observations), and 30 000 learning steps.
+- There is a time limit of 100 steps for each environnement.
+
 # Checking the environment
 
 `python jumbo_gym.py`
