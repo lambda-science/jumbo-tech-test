@@ -46,8 +46,6 @@ class JumboEnv(gym.Env):
         # Place these elements on the 12x12 matrix as before
         self.matrix[self.agent_position] = 1
         self.matrix[self.guard_position] = 2
-
-        self.pillars = self._generate_random_pillars()
         self.good_hiding_spots = self._hiding_spots()
         self.visited_positions = []
         # Placing these elements on the 12x12 matrix
@@ -121,9 +119,9 @@ class JumboEnv(gym.Env):
 
     def _custom_reward_function(self):
         """Custom reward function for the environment. Encourage exploration and stop the game if the agent is in a good hiding spot. Give a penalty for each step in the line of sight of the guard."""
-        reward_good_spot = 50.0
-        visible_penalty = -0.1
-        reward_explore = 0.05
+        reward_good_spot = 10.0
+        # visible_penalty = -0.1
+        reward_explore = 0.01
 
         done = False
         total_reward = 0
@@ -136,8 +134,8 @@ class JumboEnv(gym.Env):
         if tuple(self.agent_position) not in self.visited_positions:
             total_reward += reward_explore
         # Visible penalty
-        if self._has_line_of_sight(self.guard_position, self.agent_position):
-            total_reward += visible_penalty
+        # if self._has_line_of_sight(self.guard_position, self.agent_position):
+        #    total_reward += visible_penalty
         return total_reward, done
 
     def _get_observation(self):

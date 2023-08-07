@@ -5,12 +5,12 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 
 SEED = 42
-MAX_STEPS = 200
+MAX_STEPS = 100
 DEVICE = "auto"
 LOG_FOLDER = "./log/"
-LEARNING_RATE = 0.00003
-LEARNING_TIMESTEPS = 200000
-LEARNING_STARTS = 100000
+LEARNING_RATE = 0.00005
+LEARNING_TIMESTEPS = 100000
+LEARNING_STARTS = 50000
 N_EVAL_EPISODES = 10
 
 
