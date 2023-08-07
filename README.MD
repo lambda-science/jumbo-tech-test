@@ -1,7 +1,7 @@
 # Goal
 
 The purpose of this exercise is to create an AI dedicated in hiding. From a 12x12 matrice, the AI will learn to hide from a player. The player and the AI are randomly placed. The player doesn’t move and the AI must find a good hiding place. To solve this problem, you will use a Deep Q-Learning AI based on the stable baselines 31 framework. The AI would hide from a player with the most realistic behavior. Your AI needs to be clever enough to be efficient on a new map it has never seen during the training.  
-![maze1](assets/image2.png)
+![maze1](assets/image.png)
 
 # Installation
 
@@ -30,18 +30,18 @@ self.observation_space = spaces.flatten_space(spaces.Box(low=0, high=4, shape=(M
 `python jumbo_gym.py`
 
 ```
-.  .  .  .  .  .  .  .  .  .  .  .
-.  .  .  .  .  .  .  .  A  .  .  .
 G  ■  .  .  .  .  .  .  .  .  .  .
 G  ■  .  .  .  .  .  .  .  .  .  .
-.  .  .  .  ■  ■  .  .  ■  .  .  .
+.  ■  .  .  .  .  .  .  .  .  .  .
+.  .  .  .  .  .  .  .  .  .  .  .
+.  .  .  .  P  .  .  .  .  .  .  .
+.  .  .  .  .  .  .  A  .  .  .  .
+■  ■  ■  .  .  .  .  .  .  .  .  .
+G  .  .  .  .  .  .  ■  .  .  .  .
 .  .  .  .  .  .  .  .  .  .  .  .
 .  .  .  .  .  .  .  .  .  .  .  .
-.  P  .  .  .  .  .  .  .  .  .  .
 .  .  .  .  .  .  .  .  .  .  .  .
-.  .  .  .  .  .  .  .  .  .  .  .
-.  .  .  .  .  .  .  .  .  .  .  .
-G  .  .  .  .  .  .  .  .  .  .  .
+.  .  .  .  .  .  .  .  .  .  .  G
 ```
 
 (A is the agent, G is a good hiding spot, P is the player guard and ■ are pillars)
