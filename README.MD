@@ -67,4 +67,4 @@ Mean reward:  10.184999999999999
 ```
 
 And then a PyGame video will open with the agent (blue square) will try to find the good hiding spot (green square, hidden from the line of sight and has at least two adjacent walls) that is hidden from the guard (Red Square). Black squares represent the pillars.  
-![pygame](assets/image.png)
+![Alt text](assets/image2.png)

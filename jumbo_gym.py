@@ -16,7 +16,7 @@ MATRIX_SIZE = 12
 class JumboEnv(gym.Env):
     """Custom Gym Environment for Jumbo tech-test. Describe a 12x12 hide and seek environnement"""
 
-    metadata = {"render_modes": ["human", "rgb_array", "cli"], "render_fps": 4}
+    metadata = {"render_modes": ["human", "rgb_array", "cli"], "render_fps": 5}
 
     def __init__(self, render_mode=None):
         # Flatten observation space 12x12 -> 144
@@ -25,16 +25,33 @@ class JumboEnv(gym.Env):
         )
         # 4 possible actions
         self.action_space = gym.spaces.Discrete(4)
+        self._action_to_direction = {
+            0: np.array([1, 0]),
+            1: np.array([0, 1]),
+            2: np.array([-1, 0]),
+            3: np.array([0, -1]),
+        }
         # 12x12 matrix with posiiton of Agent, player, pillars and good hiding spots
         self.matrix = np.zeros((MATRIX_SIZE, MATRIX_SIZE))
-        self.agent_position = (0, 0)
-        self.guard_position = (0, 1)
+        self.pillars = self._generate_random_pillars()
+        self.agent_position = self._get_random_start_position()
+        while self.agent_position in self.pillars:
+            self.agent_position = self._get_random_start_position()
+        self.guard_position = self._get_random_start_position()
+        while (
+            self.guard_position in self.pillars
+            or self.guard_position == self.agent_position
+        ):
+            self.guard_position = self._get_random_start_position()
+        # Place these elements on the 12x12 matrix as before
+        self.matrix[self.agent_position] = 1
+        self.matrix[self.guard_position] = 2
+
         self.pillars = self._generate_random_pillars()
         self.good_hiding_spots = self._hiding_spots()
         self.visited_positions = []
         # Placing these elements on the 12x12 matrix
-        self.matrix[self.agent_position] = 1
-        self.matrix[self.guard_position] = 2
+
         for pillar in self.pillars:
             self.matrix[pillar] = 3
         for hiding_spot in self.good_hiding_spots:
@@ -51,26 +68,24 @@ class JumboEnv(gym.Env):
         """Reset the environment. Random position for AI, agent and pillars."""
         super().reset(seed=seed)
         self.matrix = np.zeros((MATRIX_SIZE, MATRIX_SIZE))
+        # Perform checks to make sure the agent is not spawning on a pillar or on the guard
         self.pillars = self._generate_random_pillars()
         self.agent_position = self._get_random_start_position()
-        self.good_hiding_spots = self._hiding_spots()
-        self.visited_positions = []
-
-        # Perform checks to make sure the agent is not spawning on a pillar or on the guard
         while self.agent_position in self.pillars:
             self.agent_position = self._get_random_start_position()
-
         self.guard_position = self._get_random_start_position()
-
         while (
             self.guard_position in self.pillars
             or self.guard_position == self.agent_position
         ):
             self.guard_position = self._get_random_start_position()
-
         # Place these elements on the 12x12 matrix as before
         self.matrix[self.agent_position] = 1
         self.matrix[self.guard_position] = 2
+
+        self.good_hiding_spots = self._hiding_spots()
+        self.visited_positions = []
+
         for pillar in self.pillars:
             self.matrix[pillar] = 3
         for hiding_spot in self.good_hiding_spots:
@@ -86,22 +101,11 @@ class JumboEnv(gym.Env):
         # Reset the previous position of the agent
         self.matrix[self.agent_position] = 0
         done = False
-        if action == 0:  # Move up
-            new_position = (self.agent_position[0] - 1, self.agent_position[1])
-        elif action == 1:  # Move down
-            new_position = (self.agent_position[0] + 1, self.agent_position[1])
-        elif action == 2:  # Move left
-            new_position = (self.agent_position[0], self.agent_position[1] - 1)
-        elif action == 3:  # Move right
-            new_position = (self.agent_position[0], self.agent_position[1] + 1)
-
-        # Check if the new position is valid (not colliding with pillars or out of bounds)
-        if (
-            0 <= new_position[0] < MATRIX_SIZE
-            and 0 <= new_position[1] < MATRIX_SIZE
-            and new_position not in self.pillars
-        ):
-            self.agent_position = new_position
+        # Map the action (element of {0,1,2,3}) to the direction we walk in
+        direction = self._action_to_direction[action]
+        # We use `np.clip` to make sure we don't leave the grid
+        new_position = np.clip(self.agent_position + direction, 0, MATRIX_SIZE - 1)
+        self.agent_position = (new_position[0], new_position[1])
 
         # Mark the new position
         self.matrix[self.agent_position] = 1
@@ -253,44 +257,51 @@ class JumboEnv(gym.Env):
     def _hiding_spots(self):
         """Return a list of possible hiding spots. A hiding spot is a position that is not visible from the guard and that has at least 2 adjacent walls (or pillards), typically a corner."""
         good_hiding_spots = []
-        coordinates_to_remove = [(0, 0), (11, 11), (0, 11), (12, 0)]
         for i in range(MATRIX_SIZE):
             for j in range(MATRIX_SIZE):
                 if (i, j) in self.pillars or (i, j) == self.guard_position:
                     continue
                 elif (
-                    not self._is_visible(self.guard_position, (i, j))
+                    not self._has_line_of_sight(self.guard_position, (i, j))
                     and self._number_adjacent_walls((i, j)) >= 2
                 ):
                     good_hiding_spots.append((i, j))
-        filtered_coordinates = [
-            coord for coord in good_hiding_spots if coord not in coordinates_to_remove
-        ]
-        return filtered_coordinates
+        return good_hiding_spots
 
-    def _is_visible(self, src, tgt):
-        """Check if a target position is visible from a source position. This is done by checking if there is a line of sight between the two positions, without any obstacles (pillars) in between. To check if the player can see the agent."""
-        # Check if the target is visible from the source position
-        if src == tgt:
-            return False
+    def _bresenham_line(self, x1, y1, x2, y2):
+        """Return a list of points in the line between (x1, y1) and (x2, y2) using Bresenham's line algorithm."""
+        points = []
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        err = dx - dy
 
-        src_row, src_col = src
-        tgt_row, tgt_col = tgt
-        diff_row, diff_col = tgt_row - src_row, tgt_col - src_col
-        steps = max(abs(diff_row), abs(diff_col))
+        while True:
+            points.append((x1, y1))
 
-        # Use integer division to calculate step size
-        row_step, col_step = diff_row // steps, diff_col // steps
+            if x1 == x2 and y1 == y2:
+                break
 
-        for i in range(steps + 1):
-            check_row, check_col = src_row + i * row_step, src_col + i * col_step
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x1 += sx
+            if e2 < dx:
+                err += dx
+                y1 += sy
 
-            # Check if the line of sight goes out of the grid boundaries
-            if check_row < 0 or check_row >= 12 or check_col < 0 or check_col >= 12:
-                return False
+        return points
 
-            # Check for obstacles (pillars) along the line of sight
-            if (check_row, check_col) in self.pillars:
+    def _has_line_of_sight(self, guard_position, matrix_position):
+        """Check if a given matrix position is visible from the guard position. This is done by checking if there is a line of sight between the two positions with Bresenham's line algorithm and checking if there is a pillar in the line."""
+        x1, y1 = guard_position
+        x2, y2 = matrix_position
+
+        line = self._bresenham_line(x1, y1, x2, y2)
+
+        for point in line:
+            if point in self.pillars:
                 return False
 
         return True
@@ -319,9 +330,13 @@ class JumboEnv(gym.Env):
 
         return num_adjacent_walls
 
+    def set_render_mode(self, render_mode):
+        """Set the rendering mode."""
+        self.render_mode = render_mode
+
 
 if __name__ == "__main__":
-    """ Check if the environment is working."""
+    """Check if the environment is working."""
     env = JumboEnv(render_mode="cli")
     check_env(env)
     env.reset()
