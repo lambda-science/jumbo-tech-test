@@ -101,14 +101,26 @@ class JumboEnv(gym.Env):
         done = False
         # Map the action (element of {0,1,2,3}) to the direction we walk in
         direction = self._action_to_direction[action]
-        # We use `np.clip` to make sure we don't leave the grid
-        new_position = np.clip(self.agent_position + direction, 0, MATRIX_SIZE - 1)
-        self.agent_position = (new_position[0], new_position[1])
+        new_position = self.agent_position + direction
+
+        if (
+            (0 <= new_position[0] < MATRIX_SIZE)
+            and (0 <= new_position[1] < MATRIX_SIZE)
+            and (self.matrix[new_position[0], new_position[1]] != 3)
+        ):
+            valid_movement = True
+            self.agent_position = (new_position[0], new_position[1])
+
+        else:
+            valid_movement = False
 
         # Mark the new position
         self.matrix[self.agent_position] = 1
         # Calculate the reward
-        reward, done = self._custom_reward_function()
+        reward, done = self._custom_reward_function(valid_movement)
+        if not valid_movement:
+            print("Invalid Movement", new_position, "Reward: ", reward)
+
         # Add the new position to the list of visited positions
         self.visited_positions.append(self.agent_position)
 
@@ -117,14 +129,17 @@ class JumboEnv(gym.Env):
 
         return self._get_observation(), reward, done, False, self._get_info()
 
-    def _custom_reward_function(self):
+    def _custom_reward_function(self, valid_movement):
         """Custom reward function for the environment. Encourage exploration and stop the game if the agent is in a good hiding spot. Give a penalty for each step in the line of sight of the guard."""
-        reward_good_spot = 10.0
+        reward_good_spot = 1
         # visible_penalty = -0.1
         reward_explore = 0.01
 
         done = False
         total_reward = 0
+
+        if not valid_movement:
+            return -0.01, done
 
         if self.agent_position in self.good_hiding_spots:
             done = True
