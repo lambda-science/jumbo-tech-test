@@ -5,13 +5,17 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 
 SEED = 42
-MAX_STEPS = 100
+MAX_STEPS = 200
 DEVICE = "auto"
 LOG_FOLDER = "./log/"
-LEARNING_RATE = 5e-5
+LEARNING_RATE = 1e-4
 LEARNING_TIMESTEPS = 100_000
 LEARNING_STARTS = 50_000
 N_EVAL_EPISODES = 10
+BATCH_SIZE = 2048
+EXPLORAITON_FRACTION = 0.1
+TRAIN_FREQ = 4
+EXPLORATION_FINAL_EPS = 0.05
 
 
 # Register our custom environment
@@ -32,6 +36,9 @@ model = DQN(
     env,
     learning_rate=LEARNING_RATE,
     learning_starts=LEARNING_STARTS,
+    batch_size=BATCH_SIZE,
+    exploration_fraction=EXPLORAITON_FRACTION,
+    exploration_final_eps=EXPLORATION_FINAL_EPS,
     verbose=1,
     seed=SEED,
     device=DEVICE,
