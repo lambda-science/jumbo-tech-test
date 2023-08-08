@@ -119,7 +119,9 @@ class JumboEnv(gym.Env):
         # Calculate the reward
         reward, done = self._custom_reward_function(valid_movement)
         if not valid_movement:
-            print("Invalid Movement", new_position, "Reward: ", reward)
+            print(
+                "Action ", action, "Invalid Movement", new_position, "Reward: ", reward
+            )
 
         # Add the new position to the list of visited positions
         self.visited_positions.append(self.agent_position)
@@ -133,7 +135,7 @@ class JumboEnv(gym.Env):
         """Custom reward function for the environment. Encourage exploration and stop the game if the agent is in a good hiding spot. Give a penalty for each step in the line of sight of the guard."""
         reward_good_spot = 1
         # visible_penalty = -0.1
-        reward_explore = 0.01
+        reward_explore = 0.02
 
         done = False
         total_reward = 0

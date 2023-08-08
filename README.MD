@@ -7,7 +7,7 @@ The purpose of this exercise is to create an AI dedicated in hiding. From a 12x1
 
 - `python -m venv .venv`
 - `source .venv/bin/activate`
-- `pip install stable-baselines3[extra] numpy gymnasium pygame`
+- `pip install 'stable-baselines3[extra]' numpy gymnasium pygame`
 
 # Architecture
 
