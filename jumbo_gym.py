@@ -136,7 +136,7 @@ class JumboEnv(gym.Env):
         self.matrix[self.agent_position] = 1
         if self.agent_position in self.good_hiding_spots:
             done = True
-            reward = 1000
+            reward = 1
         else:
             reward = 0
 
@@ -388,6 +388,6 @@ class JumboEnv(gym.Env):
 if __name__ == "__main__":
     """Check if the environment is working."""
     env = JumboEnv(render_mode="human", determinist=True)
-    check_env(env)
+    check_env(env, warn=True)
     env.reset()
     env.render()

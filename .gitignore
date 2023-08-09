@@ -3,3 +3,6 @@
 log/
 !log/.gitkeep
 dqn_matrix_env.zip
+models/*
+!models/.gitkeep
+nohup.out
