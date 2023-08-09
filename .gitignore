@@ -2,7 +2,7 @@
 /__pycache__
 log/
 !log/.gitkeep
-dqn_matrix_env.zip
+dqn_model.zip
 models/*
 !models/.gitkeep
 nohup.out
