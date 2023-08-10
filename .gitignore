@@ -1,8 +1,14 @@
 /.venv
 /__pycache__
+nohup.out
+
 log/
 !log/.gitkeep
-dqn_model.zip
 models/*
 !models/.gitkeep
-nohup.out
+
+minigrid_experiment/__pycache__/
+minigrid_experiment/log/*
+!minigrid_experiment/log/.gitkeep
+minigrid_experiment/models/*
+!minigrid_experiment/models/.gitkeep

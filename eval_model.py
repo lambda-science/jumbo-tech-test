@@ -32,7 +32,7 @@ env = gym.make("JumboEnv-v0", determinist=True)
 env = Monitor(env)
 
 # Post-Exploitation Model Loading
-model = DQN("MlpPolicy", env, verbose=1, device=device).load(
+model = DQN.load(
     "models/dqn_model",
     env=env,
 )
