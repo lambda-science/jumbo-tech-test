@@ -10,5 +10,7 @@ models/*
 minigrid_experiment/__pycache__/
 minigrid_experiment/log/*
 !minigrid_experiment/log/.gitkeep
+!minigrid_experiment/log/PPO_1_determinist_map
 minigrid_experiment/models/*
 !minigrid_experiment/models/.gitkeep
+!minigrid_experiment/models/ppo_minigrid_model_determinist_map.zip

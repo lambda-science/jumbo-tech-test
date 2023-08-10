@@ -65,7 +65,7 @@ env = ImgObsWrapper(env)
 checkpoint_callback = CheckpointCallback(
     save_freq=50000,
     save_path="./models/",
-    name_prefix="ppo_model",
+    name_prefix="ppo_minigrid_model_determinist_map",
     save_replay_buffer=False,
     save_vecnormalize=True,
 )
@@ -85,4 +85,4 @@ model.learn(
     callback=checkpoint_callback,
     progress_bar=True,
 )
-model.save("models/ppo_minigrid_model")
+model.save("models/ppo_minigrid_model_determinist_map")

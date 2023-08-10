@@ -63,7 +63,7 @@ env = ImgObsWrapper(env)
 
 # Post-Exploitation Model Loading
 model = PPO.load(
-    "models/ppo_minigrid_model",
+    "models/ppo_minigrid_model_determinist_map",
     env=env,
 )
 
