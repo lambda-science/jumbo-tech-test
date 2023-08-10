@@ -6,7 +6,7 @@ from torch import nn
 from minigrid.wrappers import ImgObsWrapper
 from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.evaluation import evaluate_policy
 
 
 class MinigridFeaturesExtractor(BaseFeaturesExtractor):
@@ -41,11 +41,10 @@ class MinigridFeaturesExtractor(BaseFeaturesExtractor):
 
 
 seed = 42
-max_steps = 1000
+max_steps = 50
 device = "auto"
 log_folder = "./log/"
-learning_rate = 1e-4
-learning_timesteps = 2_000_000
+n_eval_episodes = 50
 policy_kwargs = dict(
     features_extractor_class=MinigridFeaturesExtractor,
     features_extractor_kwargs=dict(features_dim=128),
@@ -62,27 +61,26 @@ gym.register(
 env = gym.make("SimpleEnv-v0", render_mode="rgb_array")
 env = ImgObsWrapper(env)
 
-checkpoint_callback = CheckpointCallback(
-    save_freq=50000,
-    save_path="./models/",
-    name_prefix="ppo_minigrid_model_determinist_map",
-    save_replay_buffer=False,
-    save_vecnormalize=True,
+# Post-Exploitation Model Loading
+model = PPO.load(
+    "models/ppo_minigrid_model_determinist_map",
+    env=env,
 )
 
-# Create PPO Model with parameters
-model = PPO(
-    "CnnPolicy",
-    env,
-    tensorboard_log=log_folder,
-    device="auto",
-    policy_kwargs=policy_kwargs,
-    verbose=1,
+# Evaluate the models without PyGame render, only the reward
+mean_reward, _ = evaluate_policy(
+    model, env, n_eval_episodes=n_eval_episodes, deterministic=False
 )
-# Learn the model
-model.learn(
-    total_timesteps=learning_timesteps,
-    callback=checkpoint_callback,
-    progress_bar=True,
+print("Mean reward: ", mean_reward)
+
+# Evaluate the model visually with PyGame render
+env.set_render_mode("human")
+mean_reward, _ = evaluate_policy(
+    model, env, n_eval_episodes=n_eval_episodes, deterministic=False
 )
-model.save("models/ppo_minigrid_model_determinist_map")
+
+# Evaluate the model visually with PyGame render
+# env.set_determinist_mode(False)
+# mean_reward, _ = evaluate_policy(
+#     model, env, n_eval_episodes=n_eval_episodes, deterministic=False
+# )
