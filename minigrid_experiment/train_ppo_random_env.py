@@ -44,7 +44,6 @@ seed = 42
 max_steps = 1000
 device = "auto"
 log_folder = "./log/"
-learning_rate = 1e-4
 learning_timesteps = 10_000_000
 policy_kwargs = dict(
     features_extractor_class=MinigridFeaturesExtractor,
@@ -59,13 +58,13 @@ gym.register(
     max_episode_steps=max_steps,
 )
 
-env = gym.make("SimpleEnv-v0", render_mode="rgb_array", determinist=True)
+env = gym.make("SimpleEnv-v0", render_mode="rgb_array", determinist=False)
 env = ImgObsWrapper(env)
 
 checkpoint_callback = CheckpointCallback(
-    save_freq=50000,
+    save_freq=50_000,
     save_path="./models/",
-    name_prefix="ppo_minigrid_model_determinist_map",
+    name_prefix="ppo_minigrid_model_random_map",
     save_replay_buffer=False,
     save_vecnormalize=True,
 )
@@ -75,14 +74,18 @@ model = PPO(
     "CnnPolicy",
     env,
     tensorboard_log=log_folder,
-    device="auto",
+    device=device,
     policy_kwargs=policy_kwargs,
     verbose=1,
 )
+
+# Reload previous model as starting point
+model.set_parameters("models/ppo_minigrid_model_determinist_map")
+
 # Learn the model
 model.learn(
     total_timesteps=learning_timesteps,
     callback=checkpoint_callback,
     progress_bar=True,
 )
-model.save("models/ppo_minigrid_model_determinist_map")
+model.save("models/ppo_minigrid_model_random_map")
