@@ -167,6 +167,9 @@ class SimpleEnv(MiniGridEnv):
 
         return num_adjacent_walls
 
+    def set_render_mode(self, mode):
+        self.render_mode = mode
+
 
 def main():
     env = SimpleEnv(render_mode="human")
