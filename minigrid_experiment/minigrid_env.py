@@ -12,9 +12,11 @@ from minigrid.minigrid_env import MiniGridEnv
 class SimpleEnv(MiniGridEnv):
     def __init__(
         self,
+        determinist=False,
         max_steps: int | None = None,
         **kwargs,
     ):
+        self.determinist = determinist
         self.size = 14
         self.agent_start_dir = 0
         self.agent_start_pos = None
@@ -42,13 +44,22 @@ class SimpleEnv(MiniGridEnv):
         self.grid = Grid(width, height)
         # Generate the surrounding walls
         self.grid.wall_rect(0, 0, width, height)
-        self.pillars = self._get_predetermined_pillars()
-        for pillar in self.pillars:
-            self.grid.set(*pillar, Wall())
+        if self.determinist:
+            self.pillars = self._get_predetermined_pillars()
+            for pillar in self.pillars:
+                self.grid.set(*pillar, Wall())
+            self.guard_position = self.place_obj(Lava(), None)
+            # Place a goal square in the bottom-right corner
+            self.hiding_spots = self._hiding_spots()
 
-        self.guard_position = self.place_obj(Lava(), None)
-        # Place a goal square in the bottom-right corner
-        self.hiding_spots = self._hiding_spots()
+        elif self.determinist == False:
+            self.pillars = self._get_random_pillars()
+            for pillar in self.pillars:
+                self.grid.set(*pillar, Wall())
+            self.guard_position = self.place_obj(Lava(), None)
+            # Place a goal square in the bottom-right corner
+            self.hiding_spots = self._hiding_spots(allow_border=True)
+
         for spot in self.hiding_spots:
             self.put_obj(Goal(), *spot)
 
@@ -83,33 +94,75 @@ class SimpleEnv(MiniGridEnv):
                     pillars.append((j, i))
         return pillars
 
+    def _get_random_pillars(self):
+        """Generate a random number of pillars with random positions and sizes. They are rectangular."""
+
+        num_pillars = 4
+        pillars = []  # List of positions with a pillar
+        for _ in range(num_pillars):
+            width = np.random.randint(2, 4)
+            height = np.random.randint(2, 4)
+            row = np.random.randint(
+                1, self.size - 2 - height
+            )  # Ensure (row + height) is within 12
+            col = np.random.randint(
+                1, self.size - 2 - width
+            )  # Ensure (col + width) is within 12
+            for i in range(width):
+                for j in range(height):
+                    pillars.append((row + i, col + j))
+        return pillars
+
     def _distance(self, pos1, pos2):
         """Return the distance between two positions."""
         return np.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
 
-    def _hiding_spots(self):
+    def _hiding_spots(self, allow_border=False):
         """Return a list of possible hiding spots. A hiding spot is a position that is not visible from the guard and that has at least 2 adjacent walls (or pillars), typically a corner."""
         good_hiding_spots = []
-        for i in range(self.size):
-            for j in range(self.size):
+        weak_hiding_spots = []
+        for i in range(1, self.size - 1):
+            for j in range(1, self.size - 1):
+                n_adj_walls, at_least_one_pillar = self._number_adjacent_walls(
+                    (i, j), allow_border
+                )
                 if (i, j) in self.pillars or (i, j) == self.guard_position:
                     continue
                 elif (
                     not self._has_line_of_sight(self.guard_position, (i, j))
-                    and self._number_adjacent_walls((i, j)) >= 2
+                    and n_adj_walls >= 2
+                    and n_adj_walls < 4
+                    and at_least_one_pillar
                 ):
                     good_hiding_spots.append((i, j))
+                elif (
+                    not self._has_line_of_sight(self.guard_position, (i, j))
+                    and n_adj_walls >= 1
+                    and n_adj_walls < 4
+                    and at_least_one_pillar
+                ):
+                    weak_hiding_spots.append((i, j))
 
-        # Filter hiding spot to keep only the 3 furthest from the guard
+        # Filter good hiding spot to keep only the 3 furthest from the guard
         if len(good_hiding_spots) > 3:
             good_hiding_spots = sorted(
                 good_hiding_spots,
                 key=lambda pos: self._distance(pos, self.guard_position),
                 reverse=True,
             )
-            good_hiding_spots = good_hiding_spots[:3]
+        # Sort weak_hiding_spots by distance to guard
+        weak_hiding_spots = sorted(
+            weak_hiding_spots,
+            key=lambda pos: self._distance(pos, self.guard_position),
+            reverse=True,
+        )
 
-        return good_hiding_spots
+        # If there are less than 3 good hiding spots, add weak hiding spots to reach 3
+        remaining_spots = 3 - len(good_hiding_spots)
+        if remaining_spots > 0:
+            good_hiding_spots.extend(weak_hiding_spots[:remaining_spots])
+
+        return good_hiding_spots[:3]
 
     def _has_line_of_sight(self, guard_position, matrix_position):
         """Check if a given matrix position is visible from the guard position. This is done by checking if there is a line of sight between the two positions with Bresenham's line algorithm and checking if there is a pillar in the line."""
@@ -149,7 +202,7 @@ class SimpleEnv(MiniGridEnv):
 
         return points
 
-    def _number_adjacent_walls(self, agent_position):
+    def _number_adjacent_walls(self, agent_position, allow_border=False):
         """Return the number of adjacent walls (or pillars) to a given position."""
         row, col = agent_position
         adjacent_positions = [
@@ -160,19 +213,27 @@ class SimpleEnv(MiniGridEnv):
         ]
 
         num_adjacent_walls = 0
-
+        at_least_one_pillar = False
         for position in adjacent_positions:
             if position in self.pillars:
+                at_least_one_pillar = True
+                num_adjacent_walls += 1
+            elif allow_border and (
+                position[0] == 0
+                or position[0] == 13
+                or position[1] == 0
+                or position[1] == 13
+            ):
                 num_adjacent_walls += 1
 
-        return num_adjacent_walls
+        return num_adjacent_walls, at_least_one_pillar
 
     def set_render_mode(self, mode):
         self.render_mode = mode
 
 
 def main():
-    env = SimpleEnv(render_mode="human")
+    env = SimpleEnv(render_mode="human", determinist=False)
     # enable manual control for testing
     manual_control = ManualControl(env)
     manual_control.start()
