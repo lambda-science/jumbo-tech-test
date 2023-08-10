@@ -2,7 +2,9 @@ import numpy as np
 import gymnasium as gym
 from stable_baselines3 import DQN
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import (
+    CheckpointCallback,
+)
 
 seed = 42
 max_steps = 1000
@@ -10,8 +12,8 @@ device = "auto"
 log_folder = "./log/"
 learning_rate = 1e-4
 learning_starts = 0
-max_episode = 80000
-learning_timesteps = 250 * max_episode
+max_episode = 100_000
+learning_timesteps = 300 * max_episode
 batch_size = 2048
 exploration_fraction = 0.8
 exploration_initial_eps = 1
@@ -26,19 +28,17 @@ gym.register(
 
 np.random.seed(seed)
 # Create the environment
-env = gym.make("JumboEnv-v0", determinist=True)
+env = gym.make("JumboEnv-v0", determinist=False)
 env = Monitor(env)
 
 checkpoint_callback = CheckpointCallback(
-    save_freq=50000,
+    save_freq=200_000,
     save_path="./models/",
-    name_prefix="dqn_model",
+    name_prefix="dqn_modelv2",
     save_replay_buffer=False,
     save_vecnormalize=True,
 )
-
-# Create DQN Model with parameters
-model = DQN(
+modelv2 = DQN(
     "MlpPolicy",
     env,
     learning_rate=learning_rate,
@@ -53,11 +53,13 @@ model = DQN(
     tensorboard_log=log_folder,
 )
 
-# Learn the model
-model.learn(
+modelv2.set_parameters("models/dqn_model")
+
+# Exploration learning
+modelv2.learn(
     total_timesteps=learning_timesteps,
     callback=checkpoint_callback,
     progress_bar=True,
 )
-model.save("models/dqn_model")
-model.save_replay_buffer("models/dqn_model_replay_buffer")
+modelv2.save("models/dqn_modelv2")
+modelv2.save_replay_buffer("models/dqn_modelv2_replay_buffer")

@@ -24,7 +24,6 @@ class JumboEnv(gym.Env):
             spaces.Box(low=0, high=4, shape=(MATRIX_SIZE, MATRIX_SIZE), dtype=np.uint8)
         )
         # 4 possible actions
-        self.determinist = determinist
         self.action_space = gym.spaces.Discrete(4)
         self._action_to_direction = {
             0: np.array([1, 0]),
@@ -33,6 +32,7 @@ class JumboEnv(gym.Env):
             3: np.array([0, -1]),
         }
         # 12x12 matrix with posiiton of Agent, player, pillars and good hiding spots
+        self.determinist = determinist
         if self.determinist:
             self.matrix, self.pillars = self._determinist_matrix()
 
@@ -40,6 +40,7 @@ class JumboEnv(gym.Env):
             self.matrix = np.zeros((MATRIX_SIZE, MATRIX_SIZE))
             self.pillars = self._generate_random_pillars()
 
+        # Randomly place agent and player on the matrix and check if they are not on a pillar
         self.agent_position = self._get_random_start_position()
         while self.agent_position in self.pillars:
             self.agent_position = self._get_random_start_position()
@@ -50,12 +51,12 @@ class JumboEnv(gym.Env):
             or self.guard_position == self.agent_position
         ):
             self.guard_position = self._get_random_start_position()
-        # Place these elements on the 12x12 matrix as before
+
         self.matrix[self.agent_position] = 1
         self.matrix[self.guard_position] = 2
-        self.good_hiding_spots = self._hiding_spots()
-        # Placing these elements on the 12x12 matrix
 
+        # Calculate good hiding spots and place them on the matrix along with pillars
+        self.good_hiding_spots = self._hiding_spots()
         for pillar in self.pillars:
             self.matrix[pillar] = 3
         for hiding_spot in self.good_hiding_spots:
@@ -72,6 +73,7 @@ class JumboEnv(gym.Env):
         """Reset the environment. Random position for AI, agent and pillars."""
         super().reset(seed=seed)
 
+        # 12x12 matrix with posiiton of Agent, player, pillars and good hiding spots
         if self.determinist:
             self.matrix, self.pillars = self._determinist_matrix()
 
@@ -79,6 +81,7 @@ class JumboEnv(gym.Env):
             self.matrix = np.zeros((MATRIX_SIZE, MATRIX_SIZE))
             self.pillars = self._generate_random_pillars()
 
+        # Randomly place agent and player on the matrix and check if they are not on a pillar
         self.agent_position = self._get_random_start_position()
         while self.agent_position in self.pillars:
             self.agent_position = self._get_random_start_position()
@@ -89,12 +92,11 @@ class JumboEnv(gym.Env):
             or self.guard_position == self.agent_position
         ):
             self.guard_position = self._get_random_start_position()
-        # Place these elements on the 12x12 matrix as before
         self.matrix[self.agent_position] = 1
         self.matrix[self.guard_position] = 2
 
+        # Calculate good hiding spots and place them on the matrix along with pillars
         self.good_hiding_spots = self._hiding_spots()
-
         for pillar in self.pillars:
             self.matrix[pillar] = 3
         for hiding_spot in self.good_hiding_spots:
@@ -114,6 +116,7 @@ class JumboEnv(gym.Env):
         direction = self._action_to_direction[action]
         new_position = self.agent_position + direction
 
+        # Check if the new position is valid and move the agent
         if (
             (0 <= new_position[0] < MATRIX_SIZE)
             and (0 <= new_position[1] < MATRIX_SIZE)
@@ -121,18 +124,8 @@ class JumboEnv(gym.Env):
             and (self.matrix[new_position[0], new_position[1]] != 3)
         ):
             self.agent_position = (new_position[0], new_position[1])
-        elif self.render_mode == "human":
-            print(
-                "Invalid. Current ",
-                self.agent_position,
-                " New ",
-                new_position,
-                " Action ",
-                action,
-                "Direction ",
-                direction,
-            )
-        # Mark the new position
+
+        # Mark the new position in the matrix/observation space and give rewards
         self.matrix[self.agent_position] = 1
         if self.agent_position in self.good_hiding_spots:
             done = True
@@ -241,11 +234,11 @@ class JumboEnv(gym.Env):
     def _generate_random_pillars(self):
         """Generate a random number of pillars with random positions and sizes. They are rectangular."""
 
-        num_pillars = np.random.randint(3, 4)
+        num_pillars = np.random.randint(4, 5)
         pillars = []  # List of positions with a pillar
         for _ in range(num_pillars):
-            width = np.random.randint(1, 4)
-            height = np.random.randint(1, 4)
+            width = np.random.randint(2, 5)
+            height = np.random.randint(2, 5)
             row = np.random.randint(
                 0, MATRIX_SIZE - 1 - height
             )  # Ensure (row + height) is within 12
@@ -276,14 +269,26 @@ class JumboEnv(gym.Env):
                 ):
                     good_hiding_spots.append((i, j))
 
-            # Filter good hiding spot to keep only the 3 furthest from the guard
-            if len(good_hiding_spots) > 3:
-                good_hiding_spots = sorted(
-                    good_hiding_spots,
-                    key=lambda pos: self._distance(pos, self.guard_position),
-                    reverse=True,
-                )
-                good_hiding_spots = good_hiding_spots[:3]
+        # If no good hiding spot in random generated map, accept less good hiding spots (only 1 adjacent wall)
+        if len(good_hiding_spots) == 0:
+            for i in range(MATRIX_SIZE):
+                for j in range(MATRIX_SIZE):
+                    if (i, j) in self.pillars or (i, j) == self.guard_position:
+                        continue
+                    elif (
+                        not self._has_line_of_sight(self.guard_position, (i, j))
+                        and self._number_adjacent_walls((i, j)) >= 1
+                    ):
+                        good_hiding_spots.append((i, j))
+
+        # Filter hiding spot to keep only the 3 furthest from the guard
+        if len(good_hiding_spots) > 3:
+            good_hiding_spots = sorted(
+                good_hiding_spots,
+                key=lambda pos: self._distance(pos, self.guard_position),
+                reverse=True,
+            )
+            good_hiding_spots = good_hiding_spots[:3]
 
         return good_hiding_spots
 
@@ -356,6 +361,7 @@ class JumboEnv(gym.Env):
         self.determinist = determinist
 
     def _determinist_matrix(self):
+        """Generate the 12x12 pre-defined matrix from the subject."""
         matrix = np.array(
             [
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -373,11 +379,6 @@ class JumboEnv(gym.Env):
             ]
         )
         pillars = []
-        # Rotate 90 degrees clockwise
-        # rotated_matrix = np.rot90(matrix, k=-1)
-
-        # # Mirror horizontally
-        # mirrored_matrix = np.fliplr(rotated_matrix)
         for i in range(matrix.shape[0]):
             for j in range(matrix.shape[1]):
                 if matrix[i, j] == 3:
