@@ -58,7 +58,7 @@ gym.register(
     max_episode_steps=max_steps,
 )
 
-env = gym.make("SimpleEnv-v0", render_mode="rgb_array", determinist=False)
+env = gym.make("SimpleEnv-v0", render_mode="rgb_array", determinist=False, max_steps=max_steps)
 env = ImgObsWrapper(env)
 
 checkpoint_callback = CheckpointCallback(
