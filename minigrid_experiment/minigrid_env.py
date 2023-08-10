@@ -1,4 +1,5 @@
 from __future__ import annotations
+import random
 
 import numpy as np
 from minigrid.core.constants import COLOR_NAMES
@@ -48,17 +49,15 @@ class SimpleEnv(MiniGridEnv):
             self.pillars = self._get_predetermined_pillars()
             for pillar in self.pillars:
                 self.grid.set(*pillar, Wall())
-            self.guard_position = self.place_obj(Lava(), None)
-            # Place a goal square in the bottom-right corner
-            self.hiding_spots = self._hiding_spots()
 
-        elif self.determinist == False:
+        elif not self.determinist:
             self.pillars = self._get_random_pillars()
             for pillar in self.pillars:
                 self.grid.set(*pillar, Wall())
-            self.guard_position = self.place_obj(Lava(), None)
-            # Place a goal square in the bottom-right corner
-            self.hiding_spots = self._hiding_spots(allow_border=True)
+
+        self.guard_position = self.place_obj(Lava(), None)
+        # Place a goal square in the bottom-right corner
+        self.hiding_spots = self._hiding_spots()
 
         for spot in self.hiding_spots:
             self.put_obj(Goal(), *spot)
@@ -97,49 +96,69 @@ class SimpleEnv(MiniGridEnv):
     def _get_random_pillars(self):
         """Generate a random number of pillars with random positions and sizes. They are rectangular."""
 
-        num_pillars = 4
+        num_pillars = np.random.randint(3, 5)
+        top_left_pos = [(2, 3), (8, 3), (3, 8), (8, 8)]
+        random.shuffle(top_left_pos)
         pillars = []  # List of positions with a pillar
-        for _ in range(num_pillars):
-            width = np.random.randint(2, 4)
-            height = np.random.randint(2, 4)
-            row = np.random.randint(
-                1, self.size - 2 - height
-            )  # Ensure (row + height) is within 12
-            col = np.random.randint(
-                1, self.size - 2 - width
-            )  # Ensure (col + width) is within 12
+
+        for index in range(num_pillars):
+            width = np.random.randint(3, 5)
+            height = np.random.randint(4, 5)
+            pillar_rect = []  # Store pillar positions for each rectangle
+            position = top_left_pos[index]
+
+            # Generate pillars for the rectangle
             for i in range(width):
                 for j in range(height):
-                    pillars.append((row + i, col + j))
+                    pillar_rect.append((position[0] + i, position[1] + j))
+
+            # Determine the number of pillars to remove from the outer layer
+            num_to_remove = min(np.random.randint(3, 5), len(pillar_rect))
+
+            # Remove pillars only from the outer layer of the rectangle
+            outer_layer = (
+                [(position[0] + i, position[1]) for i in range(width)]
+                + [(position[0] + i, position[1] + height - 1) for i in range(width)]
+                + [(position[0], position[1] + j) for j in range(1, height - 1)]
+                + [
+                    (position[0] + width - 1, position[1] + j)
+                    for j in range(1, height - 1)
+                ]
+            )
+
+            valid_removal_positions = list(set(outer_layer) & set(pillar_rect))
+            removal_positions = random.sample(valid_removal_positions, num_to_remove)
+
+            for pos in removal_positions:
+                pillar_rect.remove(pos)
+
+            pillars.extend(pillar_rect)  # Add the remaining pillars for this rectangle
+
         return pillars
 
     def _distance(self, pos1, pos2):
         """Return the distance between two positions."""
         return np.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
 
-    def _hiding_spots(self, allow_border=False):
+    def _hiding_spots(self):
         """Return a list of possible hiding spots. A hiding spot is a position that is not visible from the guard and that has at least 2 adjacent walls (or pillars), typically a corner."""
         good_hiding_spots = []
         weak_hiding_spots = []
         for i in range(1, self.size - 1):
             for j in range(1, self.size - 1):
-                n_adj_walls, at_least_one_pillar = self._number_adjacent_walls(
-                    (i, j), allow_border
-                )
+                n_adj_walls = self._number_adjacent_walls((i, j))
                 if (i, j) in self.pillars or (i, j) == self.guard_position:
                     continue
                 elif (
                     not self._has_line_of_sight(self.guard_position, (i, j))
                     and n_adj_walls >= 2
                     and n_adj_walls < 4
-                    and at_least_one_pillar
                 ):
                     good_hiding_spots.append((i, j))
                 elif (
                     not self._has_line_of_sight(self.guard_position, (i, j))
                     and n_adj_walls >= 1
                     and n_adj_walls < 4
-                    and at_least_one_pillar
                 ):
                     weak_hiding_spots.append((i, j))
 
@@ -202,7 +221,7 @@ class SimpleEnv(MiniGridEnv):
 
         return points
 
-    def _number_adjacent_walls(self, agent_position, allow_border=False):
+    def _number_adjacent_walls(self, agent_position):
         """Return the number of adjacent walls (or pillars) to a given position."""
         row, col = agent_position
         adjacent_positions = [
@@ -213,20 +232,11 @@ class SimpleEnv(MiniGridEnv):
         ]
 
         num_adjacent_walls = 0
-        at_least_one_pillar = False
         for position in adjacent_positions:
             if position in self.pillars:
-                at_least_one_pillar = True
-                num_adjacent_walls += 1
-            elif allow_border and (
-                position[0] == 0
-                or position[0] == 13
-                or position[1] == 0
-                or position[1] == 13
-            ):
                 num_adjacent_walls += 1
 
-        return num_adjacent_walls, at_least_one_pillar
+        return num_adjacent_walls
 
     def set_render_mode(self, mode):
         self.render_mode = mode
