@@ -6,6 +6,8 @@ log/
 !log/.gitkeep
 models/*
 !models/.gitkeep
+!models/dqn_model_random_map.zip
+!models/dqn_model_determinist_map.zip
 
 minigrid_experiment/__pycache__/
 minigrid_experiment/log/*

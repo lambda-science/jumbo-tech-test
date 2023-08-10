@@ -32,7 +32,7 @@ env = Monitor(env)
 checkpoint_callback = CheckpointCallback(
     save_freq=50000,
     save_path="./models/",
-    name_prefix="dqn_model",
+    name_prefix="dqn_model_determinist_map",
     save_replay_buffer=False,
     save_vecnormalize=True,
 )
@@ -59,5 +59,5 @@ model.learn(
     callback=checkpoint_callback,
     progress_bar=True,
 )
-model.save("models/dqn_model")
-model.save_replay_buffer("models/dqn_model_replay_buffer")
+model.save("models/dqn_model_determinist_map")
+model.save_replay_buffer("models/dqn_model_determinist_map_replay_buffer")

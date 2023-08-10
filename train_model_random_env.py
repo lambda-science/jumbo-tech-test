@@ -34,7 +34,7 @@ env = Monitor(env)
 checkpoint_callback = CheckpointCallback(
     save_freq=200_000,
     save_path="./models/",
-    name_prefix="dqn_modelv2",
+    name_prefix="dqn_model_random_map",
     save_replay_buffer=False,
     save_vecnormalize=True,
 )
@@ -53,7 +53,7 @@ modelv2 = DQN(
     tensorboard_log=log_folder,
 )
 
-modelv2.set_parameters("models/dqn_model")
+modelv2.set_parameters("models/dqn_model_determinist_map")
 
 # Exploration learning
 modelv2.learn(
@@ -61,5 +61,5 @@ modelv2.learn(
     callback=checkpoint_callback,
     progress_bar=True,
 )
-modelv2.save("models/dqn_modelv2")
-modelv2.save_replay_buffer("models/dqn_modelv2_replay_buffer")
+modelv2.save("models/dqn_model_random_map")
+modelv2.save_replay_buffer("models/dqn_model_random_map_replay_buffer")

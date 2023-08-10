@@ -33,7 +33,7 @@ env = Monitor(env)
 
 # Post-Exploitation Model Loading
 model = DQN.load(
-    "models/dqn_model",
+    "models/dqn_model_determinist_map",
     env=env,
 )
 
