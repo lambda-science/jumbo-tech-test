@@ -231,6 +231,9 @@ class SimpleEnv(MiniGridEnv):
     def set_render_mode(self, mode):
         self.render_mode = mode
 
+    def set_determinist_mode(self, mode):
+        self.determinist = mode
+
 
 def main():
     env = SimpleEnv(render_mode="human", determinist=False)

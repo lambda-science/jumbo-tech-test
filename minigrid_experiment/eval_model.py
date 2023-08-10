@@ -44,7 +44,7 @@ seed = 42
 max_steps = 50
 device = "auto"
 log_folder = "./log/"
-n_eval_episodes = 50
+n_eval_episodes = 20
 policy_kwargs = dict(
     features_extractor_class=MinigridFeaturesExtractor,
     features_extractor_kwargs=dict(features_dim=128),
@@ -58,7 +58,7 @@ gym.register(
     max_episode_steps=max_steps,
 )
 
-env = gym.make("SimpleEnv-v0", render_mode="rgb_array")
+env = gym.make("SimpleEnv-v0", render_mode="rgb_array", determinist=True)
 env = ImgObsWrapper(env)
 
 # Post-Exploitation Model Loading
@@ -71,7 +71,7 @@ model = PPO.load(
 mean_reward, _ = evaluate_policy(
     model, env, n_eval_episodes=n_eval_episodes, deterministic=False
 )
-print("Mean reward: ", mean_reward)
+print("Mean reward (determinist): ", mean_reward)
 
 # Evaluate the model visually with PyGame render
 env.set_render_mode("human")
@@ -80,7 +80,15 @@ mean_reward, _ = evaluate_policy(
 )
 
 # Evaluate the model visually with PyGame render
-# env.set_determinist_mode(False)
-# mean_reward, _ = evaluate_policy(
-#     model, env, n_eval_episodes=n_eval_episodes, deterministic=False
-# )
+env.set_render_mode("rgb_array")
+env.set_determinist_mode(False)
+mean_reward, _ = evaluate_policy(
+    model, env, n_eval_episodes=n_eval_episodes, deterministic=False
+)
+print("Mean reward (random map): ", mean_reward)
+
+# Evaluate the model visually with PyGame render
+env.set_render_mode("human")
+mean_reward, _ = evaluate_policy(
+    model, env, n_eval_episodes=n_eval_episodes, deterministic=False
+)
