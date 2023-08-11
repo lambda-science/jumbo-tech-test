@@ -15,7 +15,7 @@ MATRIX_SIZE = 12
 
 
 class JumboEnv(gym.Env):
-    """Custom Gym Environment for Jumbo tech-test. Describe a 12x12 
+    """Custom Gym Environment for Jumbo tech-test. Describe a 12x12
     hide and seek environnement"""
 
     metadata = {"render_modes": ["human", "rgb_array", "cli"], "render_fps": 5}
@@ -34,15 +34,18 @@ class JumboEnv(gym.Env):
             3: np.array([0, -1]),
         }
         # 12x12 matrix with posiiton of Agent, player, pillars and good hiding spots
+        self.size = MATRIX_SIZE
         self.determinist = determinist
         if self.determinist:
+            # Predefined matrix and pillars
             self.matrix, self.pillars = self._determinist_matrix()
 
         if not self.determinist:
+            # Random pillars positions
             self.matrix = np.zeros((MATRIX_SIZE, MATRIX_SIZE))
             self.pillars = self._generate_random_pillars()
 
-        # Randomly place agent and player on the matrix and check 
+        # Randomly place agent and player on the matrix and check
         # if they are not on a pillar
         self.agent_position = self._get_random_start_position()
         while self.agent_position in self.pillars:
@@ -84,7 +87,7 @@ class JumboEnv(gym.Env):
             self.matrix = np.zeros((MATRIX_SIZE, MATRIX_SIZE))
             self.pillars = self._generate_random_pillars()
 
-        # Randomly place agent and player on the matrix and check 
+        # Randomly place agent and player on the matrix and check
         # if they are not on a pillar
         self.agent_position = self._get_random_start_position()
         while self.agent_position in self.pillars:
@@ -111,7 +114,7 @@ class JumboEnv(gym.Env):
         return self._get_observation(), self._get_info()
 
     def step(self, action):
-        """Perform one step in the environment. Moving in one of the four directions. 
+        """Perform one step in the environment. Moving in one of the four directions.
         Calculate the reward and check if the game is done."""
 
         # Reset the previous position of the agent
@@ -148,7 +151,7 @@ class JumboEnv(gym.Env):
         return obs.flatten()
 
     def render(self):
-        """Render the environment. Print the matrix in the CLI (ASCII) or 
+        """Render the environment. Print the matrix in the CLI (ASCII) or
         show the environment in a PyGame window."""
 
         if self.render_mode == "cli":
@@ -178,11 +181,6 @@ class JumboEnv(gym.Env):
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill((255, 255, 255))
         cell_size = self.window_size / MATRIX_SIZE
-        WHITE = (255, 255, 255)
-        BLACK = (0, 0, 0)
-        RED = (255, 0, 0)
-        GREEN = (0, 255, 0)
-        BLUE = (0, 0, 255)
 
         for i in range(MATRIX_SIZE):
             for j in range(MATRIX_SIZE):
@@ -224,7 +222,7 @@ class JumboEnv(gym.Env):
             pygame.display.update()
 
             # We need to ensure that human-rendering occurs at the predefined framerate.
-            # The following line will automatically add a delay to keep 
+            # The following line will automatically add a delay to keep
             # the framerate stable.
             self.clock.tick(self.metadata["render_fps"])
         else:  # rgb_array
@@ -239,22 +237,22 @@ class JumboEnv(gym.Env):
             pygame.quit()
 
     def _generate_random_pillars(self):
-        """Generate a random number of pillars with random positions and sizes. 
-        They are rectangular."""
-
+        """Generate a random number of obstacles made of multiple pillars (single tile
+        wall) with random positions and sizes. They are rectangular with randomly
+        missing spots to create hiding spots."""
         num_pillars = np.random.randint(3, 5)
-        # Pre define the top left position of the rectangles
-        top_left_pos = [(1, 2), (7, 1), (2, 7), (7, 7)] 
+        # Pre define the top left position of the obstacbles
+        top_left_pos = [(1, 2), (7, 1), (2, 7), (7, 7)]
         random.shuffle(top_left_pos)
-        pillars = []  
+        pillars = []
 
-        for index in range(num_pillars):
+        for n in range(num_pillars):
             width = np.random.randint(3, 5)
             height = np.random.randint(4, 5)
-            pillar_rect = []  # Store pillar positions for each rectangle
-            position = top_left_pos[index]
+            pillar_rect = []  # Store pillar positions for each obstacble
+            position = top_left_pos[n]
 
-            # Generate pillars for the rectangle
+            # Generate pillars for the obstacble
             for i in range(width):
                 for j in range(height):
                     pillar_rect.append((position[0] + i, position[1] + j))
@@ -262,7 +260,7 @@ class JumboEnv(gym.Env):
             # Determine the number of pillars to remove from the outer layer
             num_to_remove = min(np.random.randint(3, 5), len(pillar_rect))
 
-            # Remove pillars only from the outer layer of the rectangle
+            # Remove pillars only from the outer layer of the obstacble
             outer_layer = (
                 [(position[0] + i, position[1]) for i in range(width)]
                 + [(position[0] + i, position[1] + height - 1) for i in range(width)]
@@ -279,7 +277,7 @@ class JumboEnv(gym.Env):
             for pos in removal_positions:
                 pillar_rect.remove(pos)
 
-            pillars.extend(pillar_rect)  # Add the remaining pillars for this rectangle
+            pillars.extend(pillar_rect)  # Add the remaining pillars for this obstacble
 
         return pillars
 
@@ -290,12 +288,12 @@ class JumboEnv(gym.Env):
         return {}
 
     def _hiding_spots(self):
-        """Return the 3 most distant hiding spots. A hiding spot is a position that 
+        """Return the 3 most distant hiding spots. A hiding spot is a position that
         is not visible from the guard and that has at least 2 adjacent walls (pillars),
           typically a corner."""
         good_hiding_spots = []
 
-        # Iterate over all positions in the grid and calculate the number 
+        # Iterate over all positions in the grid and calculate the number
         # of adjacent walls + line of sight
         for i in range(1, self.size - 1):
             for j in range(1, self.size - 1):
@@ -325,7 +323,7 @@ class JumboEnv(gym.Env):
         return np.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
 
     def _bresenham_line(self, x1, y1, x2, y2):
-        """Return a list of points in the line between (x1, y1) and (x2, y2) using 
+        """Return a list of points in the line between (x1, y1) and (x2, y2) using
         Bresenham's line algorithm."""
         points = []
         dx = abs(x2 - x1)
@@ -351,8 +349,8 @@ class JumboEnv(gym.Env):
         return points
 
     def _has_line_of_sight(self, guard_position, matrix_position):
-        """Check if a given matrix position is visible from the guard position. This is 
-        done by checking if there is a line of sight between the two positions with 
+        """Check if a given matrix position is visible from the guard position. This is
+        done by checking if there is a line of sight between the two positions with
         Bresenham's line algorithm and checking if there is a pillar in the line."""
         x1, y1 = guard_position
         x2, y2 = matrix_position
@@ -366,7 +364,7 @@ class JumboEnv(gym.Env):
         return True
 
     def _number_adjacent_walls(self, agent_position):
-        """Return the number of adjacent walls (or pillars) to a given position."""
+        """Return the number of adjacent pillars to a given position."""
         row, col = agent_position
         adjacent_positions = [
             (row - 1, col),
@@ -419,7 +417,8 @@ class JumboEnv(gym.Env):
 
 if __name__ == "__main__":
     """Check if the environment is working."""
-    env = JumboEnv(render_mode="human", determinist=True)
-    check_env(env, warn=True)
-    env.reset()
-    env.render()
+    while True:
+        env = JumboEnv(render_mode="human", determinist=True)
+        check_env(env, warn=True)
+        env.reset()
+        env.render()

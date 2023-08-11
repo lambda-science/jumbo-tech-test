@@ -87,7 +87,7 @@ model = PPO(
 # Reload previous model as starting point
 model.set_parameters("models/ppo_minigrid_model_determinist_map")
 
-# Learn the model
+# Train the model
 model.learn(
     total_timesteps=learning_timesteps,
     callback=checkpoint_callback,

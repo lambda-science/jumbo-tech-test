@@ -43,6 +43,15 @@ class MinigridFeaturesExtractor(BaseFeaturesExtractor):
         return self.linear(self.cnn(observations))
 
 
+def evaluate_model(model, env, n_eval_episodes):
+    """Evaluate the model on the given number of episodes and
+    return the mean reward and length"""
+    reward, ep_length = evaluate_policy(
+        model, env, n_eval_episodes=n_eval_episodes, deterministic=False
+    )
+    return np.mean(reward), np.mean(ep_length)
+
+
 seed = 42
 max_steps = 50
 device = "auto"
@@ -61,7 +70,7 @@ gym.register(
     max_episode_steps=max_steps,
 )
 
-env = gym.make("SimpleEnv-v0", render_mode="rgb_array", determinist=True)
+env = gym.make("SimpleEnv-v0", render_mode="human", determinist=True)
 env = ImgObsWrapper(env)
 
 # Model Loading
@@ -70,28 +79,11 @@ model = PPO.load(
     env=env,
 )
 
-# Evaluate the models without render, only the reward, on deterministic map
-mean_reward, _ = evaluate_policy(
-    model, env, n_eval_episodes=n_eval_episodes, deterministic=False
-)
-print("Mean reward (determinist): ", mean_reward)
+# Evaluate the models on deterministic map
+mean_reward, mean_length = evaluate_model(model, env, n_eval_episodes)
+print(f"Mean reward (determinist): {mean_reward} Mean Length: {mean_length}")
 
-# Evaluate the models WITH render, on deterministic map
-env.set_render_mode("human")
-mean_reward, _ = evaluate_policy(
-    model, env, n_eval_episodes=n_eval_episodes, deterministic=False
-)
-
-# Evaluate the models without render, only the reward, on random map
-env.set_render_mode("rgb_array")
+# Evaluate the model on random map
 env.set_determinist_mode(False)
-mean_reward, _ = evaluate_policy(
-    model, env, n_eval_episodes=n_eval_episodes, deterministic=False
-)
-print("Mean reward (random map): ", mean_reward)
-
-# Evaluate the models WITH render, on random map
-env.set_render_mode("human")
-mean_reward, _ = evaluate_policy(
-    model, env, n_eval_episodes=n_eval_episodes, deterministic=False
-)
+mean_reward, mean_length = evaluate_model(model, env, n_eval_episodes)
+print(f"Mean reward (determinist): {mean_reward} Mean Length: {mean_length}")

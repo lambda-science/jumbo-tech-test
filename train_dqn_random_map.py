@@ -53,9 +53,10 @@ modelv2 = DQN(
     tensorboard_log=log_folder,
 )
 
+# Reload previous model weights as starting point
 modelv2.set_parameters("models/dqn_model_determinist_map")
 
-# Exploration learning
+# Train the model
 modelv2.learn(
     total_timesteps=learning_timesteps,
     callback=checkpoint_callback,

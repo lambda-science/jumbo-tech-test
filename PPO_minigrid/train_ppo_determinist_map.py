@@ -82,7 +82,7 @@ model = PPO(
     policy_kwargs=policy_kwargs,
     verbose=1,
 )
-# Learn the model
+# Train the model
 model.learn(
     total_timesteps=learning_timesteps,
     callback=checkpoint_callback,

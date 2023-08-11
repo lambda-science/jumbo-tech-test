@@ -9,10 +9,10 @@ models/*
 !models/dqn_model_random_map.zip
 !models/dqn_model_determinist_map.zip
 
-minigrid_experiment/__pycache__/
-minigrid_experiment/log/*
-!minigrid_experiment/log/.gitkeep
-!minigrid_experiment/log/PPO_1_determinist_map
-minigrid_experiment/models/*
-!minigrid_experiment/models/.gitkeep
-!minigrid_experiment/models/ppo_minigrid_model_determinist_map.zip
+PPO_minigrid/__pycache__/
+PPO_minigrid/log/*
+!PPO_minigrid/log/.gitkeep
+!PPO_minigrid/log/PPO_1_determinist_map
+PPO_minigrid/models/*
+!PPO_minigrid/models/.gitkeep
+!PPO_minigrid/models/ppo_minigrid_model_determinist_map.zip

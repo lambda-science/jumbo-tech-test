@@ -11,6 +11,9 @@ from minigrid.minigrid_env import MiniGridEnv
 
 
 class SimpleEnv(MiniGridEnv):
+    """Custom MiniGrid Environment for Jumbo tech-test. Describe a 12x12
+    hide and seek environnement"""
+
     def __init__(
         self,
         determinist=False,
@@ -38,9 +41,12 @@ class SimpleEnv(MiniGridEnv):
 
     @staticmethod
     def _gen_mission():
+        """Task name"""
         return "Hide And Seek"
 
     def _gen_grid(self, width, height):
+        """Generate the grid and place all elements.
+        This method is called by gym's reset()"""
         # Create an empty grid
         self.grid = Grid(width, height)
         # Generate the surrounding walls
@@ -66,7 +72,8 @@ class SimpleEnv(MiniGridEnv):
         self.mission = "Hide and Seek"
 
     def _get_predetermined_pillars(self):
-        """Generate the 12x12 pre-defined matrix from the subject."""
+        """Get the pre-defined coordinates of the obstacles from the subject to generate
+        a pre-determined 12x12 map."""
         matrix = np.array(
             [
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -94,19 +101,20 @@ class SimpleEnv(MiniGridEnv):
         return pillars
 
     def _get_random_pillars(self):
-        """Generate a random number of pillars with random positions and sizes. 
-        They are rectangular."""
+        """Generate a random number of obstacles made of multiple pillars (single tile
+        wall) with random positions and sizes. They are rectangular with randomly
+        missing spots to create hiding spots."""
 
         num_pillars = np.random.randint(3, 5)
         top_left_pos = [(2, 3), (8, 3), (3, 8), (8, 8)]
         random.shuffle(top_left_pos)
         pillars = []  # List of positions with a pillar
 
-        for index in range(num_pillars):
+        for n in range(num_pillars):
             width = np.random.randint(3, 5)
             height = np.random.randint(4, 5)
             pillar_rect = []  # Store pillar positions for each rectangle
-            position = top_left_pos[index]
+            position = top_left_pos[n]
 
             # Generate pillars for the rectangle
             for i in range(width):
@@ -142,7 +150,7 @@ class SimpleEnv(MiniGridEnv):
         return np.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
 
     def _hiding_spots(self):
-        """Return the 3 most distant hiding spots. A hiding spot is a position that is 
+        """Return the 3 most distant hiding spots. A hiding spot is a position that is
         not visible from the guard and that has at least 2 adjacent walls (pillars),
         typically a corner."""
         good_hiding_spots = []
@@ -170,8 +178,8 @@ class SimpleEnv(MiniGridEnv):
         return good_hiding_spots
 
     def _has_line_of_sight(self, guard_position, matrix_position):
-        """Check if a given matrix position is visible from the guard position. This is 
-        done by checking if there is a line of sight between the two positions with 
+        """Check if a given matrix position is visible from the guard position. This is
+        done by checking if there is a line of sight between the two positions with
         Bresenham's line algorithm and checking if there is a pillar in the line."""
         x1, y1 = guard_position
         x2, y2 = matrix_position
@@ -185,7 +193,7 @@ class SimpleEnv(MiniGridEnv):
         return True
 
     def _bresenham_line(self, x1, y1, x2, y2):
-        """Return a list of points in the line between (x1, y1) and (x2, y2) using 
+        """Return a list of points in the line between (x1, y1) and (x2, y2) using
         Bresenham's line algorithm."""
         points = []
         dx = abs(x2 - x1)
@@ -211,7 +219,7 @@ class SimpleEnv(MiniGridEnv):
         return points
 
     def _number_adjacent_walls(self, agent_position):
-        """Return the number of adjacent walls (or pillars) to a given position."""
+        """Return the number of adjacent pillars to a given position."""
         row, col = agent_position
         adjacent_positions = [
             (row - 1, col),

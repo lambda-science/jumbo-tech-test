@@ -53,7 +53,7 @@ model = DQN(
     tensorboard_log=log_folder,
 )
 
-# Learn the model
+# Train the model
 model.learn(
     total_timesteps=learning_timesteps,
     callback=checkpoint_callback,
