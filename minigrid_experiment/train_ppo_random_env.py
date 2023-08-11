@@ -10,6 +10,9 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 
 
 class MinigridFeaturesExtractor(BaseFeaturesExtractor):
+    """Custom features extractor for Minigrid to work with Stable-Baselines3.
+    From official documentation."""
+
     def __init__(
         self,
         observation_space: gym.Space,
@@ -58,7 +61,9 @@ gym.register(
     max_episode_steps=max_steps,
 )
 
-env = gym.make("SimpleEnv-v0", render_mode="rgb_array", determinist=False, max_steps=max_steps)
+env = gym.make(
+    "SimpleEnv-v0", render_mode="rgb_array", determinist=False, max_steps=max_steps
+)
 env = ImgObsWrapper(env)
 
 checkpoint_callback = CheckpointCallback(

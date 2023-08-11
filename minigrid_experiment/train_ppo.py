@@ -10,6 +10,9 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 
 
 class MinigridFeaturesExtractor(BaseFeaturesExtractor):
+    """Custom features extractor for Minigrid to work with Stable-Baselines3.
+    From official documentation."""
+
     def __init__(
         self,
         observation_space: gym.Space,

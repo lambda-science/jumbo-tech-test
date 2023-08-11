@@ -10,6 +10,9 @@ from stable_baselines3.common.evaluation import evaluate_policy
 
 
 class MinigridFeaturesExtractor(BaseFeaturesExtractor):
+    """Custom features extractor for Minigrid to work with Stable-Baselines3.
+    From official documentation."""
+
     def __init__(
         self,
         observation_space: gym.Space,
@@ -44,7 +47,7 @@ seed = 42
 max_steps = 50
 device = "auto"
 log_folder = "./log/"
-n_eval_episodes = 20
+n_eval_episodes = 10
 policy_kwargs = dict(
     features_extractor_class=MinigridFeaturesExtractor,
     features_extractor_kwargs=dict(features_dim=128),
@@ -61,25 +64,25 @@ gym.register(
 env = gym.make("SimpleEnv-v0", render_mode="rgb_array", determinist=True)
 env = ImgObsWrapper(env)
 
-# Post-Exploitation Model Loading
+# Model Loading
 model = PPO.load(
-    "models/ppo_minigrid_model_determinist_map",
+    "models/ppo_minigrid_model_random_map",
     env=env,
 )
 
-# Evaluate the models without PyGame render, only the reward
+# Evaluate the models without render, only the reward, on deterministic map
 mean_reward, _ = evaluate_policy(
     model, env, n_eval_episodes=n_eval_episodes, deterministic=False
 )
 print("Mean reward (determinist): ", mean_reward)
 
-# Evaluate the model visually with PyGame render
+# Evaluate the models WITH render, on deterministic map
 env.set_render_mode("human")
 mean_reward, _ = evaluate_policy(
     model, env, n_eval_episodes=n_eval_episodes, deterministic=False
 )
 
-# Evaluate the model visually with PyGame render
+# Evaluate the models without render, only the reward, on random map
 env.set_render_mode("rgb_array")
 env.set_determinist_mode(False)
 mean_reward, _ = evaluate_policy(
@@ -87,7 +90,7 @@ mean_reward, _ = evaluate_policy(
 )
 print("Mean reward (random map): ", mean_reward)
 
-# Evaluate the model visually with PyGame render
+# Evaluate the models WITH render, on random map
 env.set_render_mode("human")
 mean_reward, _ = evaluate_policy(
     model, env, n_eval_episodes=n_eval_episodes, deterministic=False
