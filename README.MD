@@ -157,7 +157,7 @@ On the random map environment, the model took a longer time to converge but it s
 ----------------------------------------
 ```
 
-**Here is a GIF of the trained PPO model solving my Minigrid environment in a random map setting (changing every reset):**
+**Here is a GIF of the trained PPO model solving my Minigrid environment in a random map setting (changing every reset):**  
 ![PPO Agent GIF Random Map](readme_assets/ppo_random.gif)
 
 # Final Words
