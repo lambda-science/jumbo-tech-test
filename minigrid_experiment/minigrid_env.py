@@ -94,7 +94,8 @@ class SimpleEnv(MiniGridEnv):
         return pillars
 
     def _get_random_pillars(self):
-        """Generate a random number of pillars with random positions and sizes. They are rectangular."""
+        """Generate a random number of pillars with random positions and sizes. 
+        They are rectangular."""
 
         num_pillars = np.random.randint(3, 5)
         top_left_pos = [(2, 3), (8, 3), (3, 8), (8, 8)]
@@ -141,7 +142,9 @@ class SimpleEnv(MiniGridEnv):
         return np.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
 
     def _hiding_spots(self):
-        """Return a list of possible hiding spots. A hiding spot is a position that is not visible from the guard and that has at least 2 adjacent walls (or pillars), typically a corner."""
+        """Return the 3 most distant hiding spots. A hiding spot is a position that is 
+        not visible from the guard and that has at least 2 adjacent walls (pillars),
+        typically a corner."""
         good_hiding_spots = []
         for i in range(1, self.size - 1):
             for j in range(1, self.size - 1):
@@ -167,7 +170,9 @@ class SimpleEnv(MiniGridEnv):
         return good_hiding_spots
 
     def _has_line_of_sight(self, guard_position, matrix_position):
-        """Check if a given matrix position is visible from the guard position. This is done by checking if there is a line of sight between the two positions with Bresenham's line algorithm and checking if there is a pillar in the line."""
+        """Check if a given matrix position is visible from the guard position. This is 
+        done by checking if there is a line of sight between the two positions with 
+        Bresenham's line algorithm and checking if there is a pillar in the line."""
         x1, y1 = guard_position
         x2, y2 = matrix_position
 
@@ -180,7 +185,8 @@ class SimpleEnv(MiniGridEnv):
         return True
 
     def _bresenham_line(self, x1, y1, x2, y2):
-        """Return a list of points in the line between (x1, y1) and (x2, y2) using Bresenham's line algorithm."""
+        """Return a list of points in the line between (x1, y1) and (x2, y2) using 
+        Bresenham's line algorithm."""
         points = []
         dx = abs(x2 - x1)
         dy = abs(y2 - y1)

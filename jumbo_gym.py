@@ -1,3 +1,4 @@
+import random
 import gymnasium as gym
 import numpy as np
 import math
@@ -14,7 +15,8 @@ MATRIX_SIZE = 12
 
 
 class JumboEnv(gym.Env):
-    """Custom Gym Environment for Jumbo tech-test. Describe a 12x12 hide and seek environnement"""
+    """Custom Gym Environment for Jumbo tech-test. Describe a 12x12 
+    hide and seek environnement"""
 
     metadata = {"render_modes": ["human", "rgb_array", "cli"], "render_fps": 5}
 
@@ -40,7 +42,8 @@ class JumboEnv(gym.Env):
             self.matrix = np.zeros((MATRIX_SIZE, MATRIX_SIZE))
             self.pillars = self._generate_random_pillars()
 
-        # Randomly place agent and player on the matrix and check if they are not on a pillar
+        # Randomly place agent and player on the matrix and check 
+        # if they are not on a pillar
         self.agent_position = self._get_random_start_position()
         while self.agent_position in self.pillars:
             self.agent_position = self._get_random_start_position()
@@ -81,7 +84,8 @@ class JumboEnv(gym.Env):
             self.matrix = np.zeros((MATRIX_SIZE, MATRIX_SIZE))
             self.pillars = self._generate_random_pillars()
 
-        # Randomly place agent and player on the matrix and check if they are not on a pillar
+        # Randomly place agent and player on the matrix and check 
+        # if they are not on a pillar
         self.agent_position = self._get_random_start_position()
         while self.agent_position in self.pillars:
             self.agent_position = self._get_random_start_position()
@@ -107,7 +111,8 @@ class JumboEnv(gym.Env):
         return self._get_observation(), self._get_info()
 
     def step(self, action):
-        """Perform one step in the environment. Moving in one of the four directions. Calculate the reward and check if the game is done."""
+        """Perform one step in the environment. Moving in one of the four directions. 
+        Calculate the reward and check if the game is done."""
 
         # Reset the previous position of the agent
         self.matrix[self.agent_position] = 0
@@ -143,7 +148,8 @@ class JumboEnv(gym.Env):
         return obs.flatten()
 
     def render(self):
-        """Render the environment. Print the matrix in the CLI (ASCII) or show the environment in a PyGame window."""
+        """Render the environment. Print the matrix in the CLI (ASCII) or 
+        show the environment in a PyGame window."""
 
         if self.render_mode == "cli":
             render_matrix = np.full((MATRIX_SIZE, MATRIX_SIZE), ".")
@@ -218,7 +224,8 @@ class JumboEnv(gym.Env):
             pygame.display.update()
 
             # We need to ensure that human-rendering occurs at the predefined framerate.
-            # The following line will automatically add a delay to keep the framerate stable.
+            # The following line will automatically add a delay to keep 
+            # the framerate stable.
             self.clock.tick(self.metadata["render_fps"])
         else:  # rgb_array
             return np.transpose(
@@ -232,22 +239,48 @@ class JumboEnv(gym.Env):
             pygame.quit()
 
     def _generate_random_pillars(self):
-        """Generate a random number of pillars with random positions and sizes. They are rectangular."""
+        """Generate a random number of pillars with random positions and sizes. 
+        They are rectangular."""
 
-        num_pillars = np.random.randint(4, 5)
-        pillars = []  # List of positions with a pillar
-        for _ in range(num_pillars):
-            width = np.random.randint(2, 5)
-            height = np.random.randint(2, 5)
-            row = np.random.randint(
-                0, MATRIX_SIZE - 1 - height
-            )  # Ensure (row + height) is within 12
-            col = np.random.randint(
-                0, MATRIX_SIZE - 1 - width
-            )  # Ensure (col + width) is within 12
+        num_pillars = np.random.randint(3, 5)
+        # Pre define the top left position of the rectangles
+        top_left_pos = [(1, 2), (7, 1), (2, 7), (7, 7)] 
+        random.shuffle(top_left_pos)
+        pillars = []  
+
+        for index in range(num_pillars):
+            width = np.random.randint(3, 5)
+            height = np.random.randint(4, 5)
+            pillar_rect = []  # Store pillar positions for each rectangle
+            position = top_left_pos[index]
+
+            # Generate pillars for the rectangle
             for i in range(width):
                 for j in range(height):
-                    pillars.append((row + i, col + j))
+                    pillar_rect.append((position[0] + i, position[1] + j))
+
+            # Determine the number of pillars to remove from the outer layer
+            num_to_remove = min(np.random.randint(3, 5), len(pillar_rect))
+
+            # Remove pillars only from the outer layer of the rectangle
+            outer_layer = (
+                [(position[0] + i, position[1]) for i in range(width)]
+                + [(position[0] + i, position[1] + height - 1) for i in range(width)]
+                + [(position[0], position[1] + j) for j in range(1, height - 1)]
+                + [
+                    (position[0] + width - 1, position[1] + j)
+                    for j in range(1, height - 1)
+                ]
+            )
+
+            valid_removal_positions = list(set(outer_layer) & set(pillar_rect))
+            removal_positions = random.sample(valid_removal_positions, num_to_remove)
+
+            for pos in removal_positions:
+                pillar_rect.remove(pos)
+
+            pillars.extend(pillar_rect)  # Add the remaining pillars for this rectangle
+
         return pillars
 
     def _get_random_start_position(self):
@@ -257,31 +290,26 @@ class JumboEnv(gym.Env):
         return {}
 
     def _hiding_spots(self):
-        """Return a list of possible hiding spots. A hiding spot is a position that is not visible from the guard and that has at least 2 adjacent walls (or pillars), typically a corner."""
+        """Return the 3 most distant hiding spots. A hiding spot is a position that 
+        is not visible from the guard and that has at least 2 adjacent walls (pillars),
+          typically a corner."""
         good_hiding_spots = []
-        for i in range(MATRIX_SIZE):
-            for j in range(MATRIX_SIZE):
+
+        # Iterate over all positions in the grid and calculate the number 
+        # of adjacent walls + line of sight
+        for i in range(1, self.size - 1):
+            for j in range(1, self.size - 1):
+                n_adj_walls = self._number_adjacent_walls((i, j))
                 if (i, j) in self.pillars or (i, j) == self.guard_position:
                     continue
                 elif (
                     not self._has_line_of_sight(self.guard_position, (i, j))
-                    and self._number_adjacent_walls((i, j)) >= 2
+                    and n_adj_walls >= 2
+                    and n_adj_walls < 4
                 ):
                     good_hiding_spots.append((i, j))
 
-        # If no good hiding spot in random generated map, accept less good hiding spots (only 1 adjacent wall)
-        if len(good_hiding_spots) == 0:
-            for i in range(MATRIX_SIZE):
-                for j in range(MATRIX_SIZE):
-                    if (i, j) in self.pillars or (i, j) == self.guard_position:
-                        continue
-                    elif (
-                        not self._has_line_of_sight(self.guard_position, (i, j))
-                        and self._number_adjacent_walls((i, j)) >= 1
-                    ):
-                        good_hiding_spots.append((i, j))
-
-        # Filter hiding spot to keep only the 3 furthest from the guard
+        # Filter good hiding spot to keep only the 3 furthest from the guard
         if len(good_hiding_spots) > 3:
             good_hiding_spots = sorted(
                 good_hiding_spots,
@@ -297,7 +325,8 @@ class JumboEnv(gym.Env):
         return np.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
 
     def _bresenham_line(self, x1, y1, x2, y2):
-        """Return a list of points in the line between (x1, y1) and (x2, y2) using Bresenham's line algorithm."""
+        """Return a list of points in the line between (x1, y1) and (x2, y2) using 
+        Bresenham's line algorithm."""
         points = []
         dx = abs(x2 - x1)
         dy = abs(y2 - y1)
@@ -322,7 +351,9 @@ class JumboEnv(gym.Env):
         return points
 
     def _has_line_of_sight(self, guard_position, matrix_position):
-        """Check if a given matrix position is visible from the guard position. This is done by checking if there is a line of sight between the two positions with Bresenham's line algorithm and checking if there is a pillar in the line."""
+        """Check if a given matrix position is visible from the guard position. This is 
+        done by checking if there is a line of sight between the two positions with 
+        Bresenham's line algorithm and checking if there is a pillar in the line."""
         x1, y1 = guard_position
         x2, y2 = matrix_position
 
