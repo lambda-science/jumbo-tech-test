@@ -143,7 +143,6 @@ class SimpleEnv(MiniGridEnv):
     def _hiding_spots(self):
         """Return a list of possible hiding spots. A hiding spot is a position that is not visible from the guard and that has at least 2 adjacent walls (or pillars), typically a corner."""
         good_hiding_spots = []
-        weak_hiding_spots = []
         for i in range(1, self.size - 1):
             for j in range(1, self.size - 1):
                 n_adj_walls = self._number_adjacent_walls((i, j))
@@ -155,12 +154,6 @@ class SimpleEnv(MiniGridEnv):
                     and n_adj_walls < 4
                 ):
                     good_hiding_spots.append((i, j))
-                elif (
-                    not self._has_line_of_sight(self.guard_position, (i, j))
-                    and n_adj_walls >= 1
-                    and n_adj_walls < 4
-                ):
-                    weak_hiding_spots.append((i, j))
 
         # Filter good hiding spot to keep only the 3 furthest from the guard
         if len(good_hiding_spots) > 3:
@@ -169,19 +162,9 @@ class SimpleEnv(MiniGridEnv):
                 key=lambda pos: self._distance(pos, self.guard_position),
                 reverse=True,
             )
-        # Sort weak_hiding_spots by distance to guard
-        weak_hiding_spots = sorted(
-            weak_hiding_spots,
-            key=lambda pos: self._distance(pos, self.guard_position),
-            reverse=True,
-        )
+            good_hiding_spots = good_hiding_spots[:3]
 
-        # If there are less than 3 good hiding spots, add weak hiding spots to reach 3
-        remaining_spots = 3 - len(good_hiding_spots)
-        if remaining_spots > 0:
-            good_hiding_spots.extend(weak_hiding_spots[:remaining_spots])
-
-        return good_hiding_spots[:3]
+        return good_hiding_spots
 
     def _has_line_of_sight(self, guard_position, matrix_position):
         """Check if a given matrix position is visible from the guard position. This is done by checking if there is a line of sight between the two positions with Bresenham's line algorithm and checking if there is a pillar in the line."""
