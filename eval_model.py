@@ -4,20 +4,10 @@ from stable_baselines3 import DQN
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 
-
 seed = 42
 max_steps = 50
 device = "auto"
-log_folder = "./log/"
-learning_rate = 1e-4
-learning_starts = 0
-max_episode = 80000
-learning_timesteps = 250 * max_episode
-batch_size = 2048
-exploration_fraction = 0.8
-exploration_initial_eps = 1
-exploration_final_eps = 0.05
-n_eval_episodes = 100
+n_eval_episodes = 10
 
 # Register our custom environment
 gym.register(
@@ -37,20 +27,28 @@ model = DQN.load(
     env=env,
 )
 
-# Evaluate the models without PyGame render, only the reward
+# Evaluate the models without render, only the reward, on deterministic map
 mean_reward, _ = evaluate_policy(
     model, env, n_eval_episodes=n_eval_episodes, deterministic=False
 )
-print("Mean reward: ", mean_reward)
+print("Mean reward (determinist): ", mean_reward)
 
-# Evaluate the model visually with PyGame render
+# Evaluate the models WITH render, on deterministic map
 env.set_render_mode("human")
 mean_reward, _ = evaluate_policy(
     model, env, n_eval_episodes=n_eval_episodes, deterministic=False
 )
 
-# Evaluate the model visually with PyGame render
+# Evaluate the models without render, only the reward, on random map
+env.set_render_mode("rgb_array")
 env.set_determinist_mode(False)
+mean_reward, _ = evaluate_policy(
+    model, env, n_eval_episodes=n_eval_episodes, deterministic=False
+)
+print("Mean reward (random map): ", mean_reward)
+
+# Evaluate the models WITH render, on random map
+env.set_render_mode("human")
 mean_reward, _ = evaluate_policy(
     model, env, n_eval_episodes=n_eval_episodes, deterministic=False
 )
